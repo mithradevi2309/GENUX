@@ -3,6 +3,7 @@ import mysql from "mysql";
 import { Parser } from "json2csv";
 import { classifyBehaviorMultiCondition, generateSuggestion, trainModel, SimpleSentimentClassifier } from "./decisionEngine.js";
 import { generateDynamicSuggestion, checkOllamaAvailability, generateUICodeChanges } from './llmAdapter.js';
+import { trackUIChangeApproval } from './githubIntegration.js';
 import cors from 'cors';
 
 const app = express();
@@ -208,7 +209,7 @@ app.get("/api/admin/pending-suggestions", (req, res) => {
   );
 });
 
-// Admin: Approve suggestion for deployment with LLM-generated code
+// Admin: Approve suggestion for deployment with LLM-generated code and GitHub tracking
 app.post("/api/admin/approve-suggestion", async (req, res) => {
   const { suggestionId, codeChange } = req.body;
 
@@ -240,11 +241,29 @@ app.post("/api/admin/approve-suggestion", async (req, res) => {
           }
         );
       }
-    } catch (error) {
-      console.error("LLM code generation error:", error);
-    }
 
-    res.json({ approved: true });
+      // Track with GitHub integration
+      const trackResult = await trackUIChangeApproval(suggestionId, codeChange);
+      console.log('GitHub tracking:', trackResult);
+      
+      res.json({ 
+        approved: true, 
+        deployment: {
+          status: 'processing',
+          branch: trackResult.branch || 'auto-deploy',
+          message: 'UI changes committed and queued for deployment'
+        }
+      });
+    } catch (error) {
+      console.error("Approval error:", error);
+      res.json({ 
+        approved: true, 
+        deployment: { 
+          status: 'fallback', 
+          message: 'Changes approved but deployment tracking failed'
+        }
+      });
+    }
   });
 });
 
@@ -388,6 +407,33 @@ app.get("/api/admin/ml-config", (req, res) => {
       adaptationMethod: "Feedback-based effectiveness scoring",
     }
   });
+});
+
+// Get deployment status and GitHub integration info
+app.get("/api/admin/deployment-status", async (req, res) => {
+  res.json({
+    github_integration: process.env.GIT_AUTO_COMMIT === 'true' ? 'enabled' : 'disabled',
+    auto_push: process.env.GIT_AUTO_PUSH === 'true' ? 'enabled' : 'disabled',
+    ci_cd_pipeline: 'GitHub Actions (.github/workflows/deploy-ui-changes.yml)',
+    deployment_target: 'public/index.html, admin/index.html, frontend JS',
+    latest_deployments: [],
+    message: 'UI changes are automatically deployed when approved'
+  });
+});
+
+// Get deployment history
+app.get("/api/admin/deployment-history", (req, res) => {
+  db.query(
+    "SELECT id, suggestion_id, file_path, change_description, approved, deployed, created_at FROM code_changes ORDER BY created_at DESC LIMIT 20",
+    (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+      const history = results.map(r => ({
+        ...r,
+        deployment_status: r.deployed ? 'deployed' : 'pending'
+      }));
+      res.json(history);
+    }
+  );
 });
 
 /**
