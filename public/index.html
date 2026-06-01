@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GENUX User Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto; background: #f9fafb; color: #1f2937; }
+    header { background: #1f2937; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+    .role-btn { background: #3b82f6; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; font-size: 0.9rem; }
+    .role-btn:hover { background: #2563eb; }
+    main { padding: 2rem; max-width: 900px; margin: 0 auto; }
+    .card { background: white; border-radius: 8px; margin: 1rem 0; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    h2 { color: #1f2937; margin-bottom: 1rem; font-size: 1.3rem; }
+    .form-group { margin: 1rem 0; }
+    label { display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem; }
+    input, textarea, select { width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.95rem; font-family: inherit; }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+    button { background: #3b82f6; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-size: 0.95rem; margin-top: 0.5rem; }
+    button:hover { background: #2563eb; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .metric { background: #f3f4f6; padding: 1rem; border-radius: 4px; text-align: center; }
+    .metric-value { font-size: 1.5rem; font-weight: bold; color: #3b82f6; }
+    .metric-label { font-size: 0.85rem; color: #6b7280; margin-top: 0.5rem; }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; z-index: 1000; }
+    .modal.active { display: flex; }
+    .modal-content { background: white; padding: 2rem; border-radius: 8px; width: 90%; max-width: 500px; }
+    .modal-content button { width: 100%; }
+    .suggestion-btn { background: #10b981; }
+    .suggestion-btn:hover { background: #059669; }
+    .reject-btn { background: #ef4444; }
+    .reject-btn:hover { background: #dc2626; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>GENUX Dashboard</h1>
+      <p style="font-size: 0.9rem; opacity: 0.8;">Track your behavior and get smart suggestions</p>
+    </div>
+    <button class="role-btn" onclick="switchRole()">Switch to Admin →</button>
+  </header>
+
+  <main>
+    <div class="card">
+      <h2>📊 Session Metrics</h2>
+      <div class="stats" id="metricsDisplay">
+        <div class="metric">
+          <div class="metric-value" id="clickCount">0</div>
+          <div class="metric-label">Clicks</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value" id="scrollCount">0</div>
+          <div class="metric-label">Scrolls</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value" id="formCount">0</div>
+          <div class="metric-label">Form Interactions</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value" id="idleCount">0</div>
+          <div class="metric-label">Idle Periods</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🎯 Search & Navigation</h2>
+      <div class="form-group">
+        <label>What are you looking for?</label>
+        <input type="text" id="searchInput" placeholder="Enter search query..." />
+      </div>
+      <div class="form-group">
+        <label>How easy was it to find?</label>
+        <select id="discoverabilityRating">
+          <option value="">-- Select --</option>
+          <option value="very_easy">Very Easy</option>
+          <option value="easy">Easy</option>
+          <option value="neutral">Neutral</option>
+          <option value="difficult">Difficult</option>
+          <option value="very_difficult">Very Difficult</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📝 Feedback Form</h2>
+      <div class="form-group">
+        <label>How would you rate this dashboard?</label>
+        <select id="ratingSelect">
+          <option value="">-- Select rating --</option>
+          <option value="5">⭐⭐⭐⭐⭐ Excellent</option>
+          <option value="4">⭐⭐⭐⭐ Good</option>
+          <option value="3">⭐⭐⭐ Average</option>
+          <option value="2">⭐⭐ Poor</option>
+          <option value="1">⭐ Very Poor</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Any specific issues or suggestions?</label>
+        <textarea id="feedbackText" placeholder="Tell us what could be better..." rows="4"></textarea>
+      </div>
+      <button onclick="submitFeedback()">Submit Feedback</button>
+    </div>
+
+    <div class="card">
+      <h2>⚡ System Actions</h2>
+      <button onclick="analyzeMyBehavior()" style="background: #8b5cf6;">Analyze My Behavior Now</button>
+      <p style="margin-top: 1rem; font-size: 0.9rem; color: #6b7280;">Click to check if GENUX detects any improvements for your dashboard.</p>
+    </div>
+  </main>
+
+  <div id="suggestionModal" class="modal">
+    <div class="modal-content">
+      <h2>💡 GENUX Suggestion</h2>
+      <p id="suggestionText" style="margin: 1rem 0; line-height: 1.6;"></p>
+      <p id="suggestionDetail" style="margin: 1rem 0; font-size: 0.9rem; color: #6b7280;"></p>
+      <button class="suggestion-btn" onclick="acceptSuggestion()">✓ Apply This Change</button>
+      <button class="reject-btn" onclick="rejectSuggestion()">✗ Keep Current UI</button>
+    </div>
+  </div>
+
+  <script>
+    const sessionId = localStorage.getItem("genux_session") || crypto.randomUUID();
+    const userId = localStorage.getItem("genux_user_id") || "user_1";
+    localStorage.setItem("genux_session", sessionId);
+    localStorage.setItem("genux_user_id", userId);
+
+    let eventCounts = { click: 0, scroll: 0, form: 0, idle: 0, blur: 0 };
+    let currentSuggestion = null;
+    let lastAnalysisTime = 0;
+    let lastEventAt = Date.now();
+    let lastScrollSent = 0;
+    let idleSent = false;
+
+    function updateMetricsDisplay() {
+      document.getElementById("clickCount").textContent = eventCounts.click;
+      document.getElementById("scrollCount").textContent = eventCounts.scroll;
+      document.getElementById("formCount").textContent = eventCounts.form;
+      document.getElementById("idleCount").textContent = eventCounts.idle;
+    }
+
+    function trackEvent(event, metadata = {}) {
+      const eventData = {
+        event,
+        component: metadata.component || "dashboard",
+        timestamp: Date.now(),
+        sessionId,
+        userId,
+        metadata,
+      };
+
+      // Update local counts and last activity
+      lastEventAt = Date.now();
+      idleSent = false;
+      if (event === "click") eventCounts.click++;
+      if (event === "scroll") eventCounts.scroll++;
+      if (event === "idle") {
+        // only increment idle when actually reporting an idle period
+        eventCounts.idle++;
+      }
+      if (event === "blur") eventCounts.blur++;
+      if (event === "focus" || event === "input") eventCounts.form++;
+
+      updateMetricsDisplay();
+
+      fetch("/api/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(eventData),
+      }).catch(console.error);
+    }
+
+    function analyzeMyBehavior() {
+      if (Date.now() - lastAnalysisTime < 5000) {
+        alert("Please wait a few seconds before analyzing again.");
+        return;
+      }
+
+      fetch("/api/analyze-behavior", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, sessionId }),
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          lastAnalysisTime = Date.now();
+          const { suggestion, classification } = data;
+          if (suggestion && suggestion.action !== "none") {
+            currentSuggestion = suggestion;
+            document.getElementById("suggestionText").textContent = suggestion.text;
+            document.getElementById("suggestionDetail").textContent = `Classification: ${classification.class} (${classification.reason})`;
+            document.getElementById("suggestionModal").classList.add("active");
+          } else {
+            alert("No improvements detected. Keep using the dashboard!");
+          }
+        })
+        .catch(console.error);
+    }
+
+    function acceptSuggestion() {
+      if (!currentSuggestion) return;
+      fetch("/api/suggestion-feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ suggestionId: currentSuggestion.id, userFeedback: "accepted", userId }),
+      });
+      
+      // Also record for adaptive learning
+      fetch("/api/record-feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          userId, 
+          suggestionId: currentSuggestion.id, 
+          feedback: "accepted",
+          notes: "User approved suggestion: " + currentSuggestion.action
+        }),
+      }).catch(console.error);
+      
+      trackEvent("suggestion_accepted", { suggestion: currentSuggestion.action });
+      document.getElementById("suggestionModal").classList.remove("active");
+      alert("Thank you! Your feedback helps improve GENUX.");
+    }
+
+    function rejectSuggestion() {
+      if (!currentSuggestion) return;
+      fetch("/api/suggestion-feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ suggestionId: currentSuggestion.id, userFeedback: "rejected", userId }),
+      });
+      
+      // Also record for adaptive learning
+      fetch("/api/record-feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          userId, 
+          suggestionId: currentSuggestion.id, 
+          feedback: "rejected",
+          notes: "User rejected suggestion: " + currentSuggestion.action
+        }),
+      }).catch(console.error);
+      
+      trackEvent("suggestion_rejected", { suggestion: currentSuggestion.action });
+      document.getElementById("suggestionModal").classList.remove("active");
+    }
+
+    function submitFeedback() {
+      const rating = document.getElementById("ratingSelect").value;
+      const text = document.getElementById("feedbackText").value;
+      const search = document.getElementById("searchInput").value;
+      const discovery = document.getElementById("discoverabilityRating").value;
+
+      if (!rating || !text) {
+        alert("Please fill all fields.");
+        return;
+      }
+
+      trackEvent("feedback_submitted", {
+        rating,
+        discovery,
+        hasSearchQuery: !!search,
+      });
+
+      // Store form input data in DB for learning
+      fetch("/api/user-inputs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          sessionId,
+          inputType: "form_feedback",
+          searchQuery: search,
+          discoverabilityRating: discovery,
+          dashboardRating: parseInt(rating),
+          feedbackText: text
+        }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          console.log("Feedback stored:", data);
+        })
+        .catch(console.error);
+
+      document.getElementById("feedbackText").value = "";
+      document.getElementById("ratingSelect").value = "";
+      alert("Feedback submitted! Thank you.");
+    }
+
+    function switchRole() {
+      window.location.href = "/admin/";
+    }
+
+    // Global event tracking
+    document.addEventListener("click", () => trackEvent("click", { source: "user" }));
+    document.addEventListener("scroll", () => {
+      const now = Date.now();
+      // throttle scroll reporting to once every 700ms
+      if (now - lastScrollSent > 700) {
+        lastScrollSent = now;
+        trackEvent("scroll");
+      } else {
+        // still update local count to reflect movement but don't flood backend
+        eventCounts.scroll++;
+        updateMetricsDisplay();
+      }
+    }, { passive: true });
+    document.getElementById("searchInput").addEventListener("change", (e) => {
+      trackEvent("search", { query: e.target.value });
+    });
+    document.getElementById("discoverabilityRating").addEventListener("change", (e) => {
+      trackEvent("discoverability_rating", { rating: e.target.value });
+    });
+
+    // Send idle only if no activity for 15s; send once until next activity
+    setInterval(() => {
+      const now = Date.now();
+      if (!idleSent && now - lastEventAt > 15000) {
+        idleSent = true;
+        trackEvent("idle");
+      }
+    }, 5000);
+    trackEvent("page_view", { page: "user_dashboard" });
+    updateMetricsDisplay();
+  </script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+{
+  "options": {
+    "gainFunction": "gini",
+    "splitFunction": "mean",
+    "minNumSamples": 3,
+    "maxDepth": null,
+    "kind": "classifier"
+  },
+  "root": {
+    "kind": "classifier",
+    "gainFunction": "gini",
+    "splitFunction": "mean",
+    "minNumSamples": 3,
+    "maxDepth": null,
+    "splitValue": 1,
+    "splitColumn": 0,
+    "gain": 0,
+    "distribution": [
+      [
+        0,
+        0,
+        0
+      ]
+    ]
+  },
+  "name": "DTClassifier"
+}
